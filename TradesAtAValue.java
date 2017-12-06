@@ -1,13 +1,11 @@
-import java.sql.Date;
-
 /**
- * 
- */
-
-/**
- * @author samee
+ * @author Sameera Bammidi
+ * Created On: 12/05/217
  *
  */
+
+import java.sql.Date;
+
 public class TradesAtAValue { // to be used in such a way that one object of this class type is associate per each unique <Date,Price> for an Insider's set
 /*
  * All transactions on a given date at a given price point and a given type (purchase or sale)
