@@ -2,7 +2,7 @@
  * File Name: PowerLawFitting
  * 
  * Author: Sameera Bammidi
- *Created on: 14/11/2017
+ *Created on: 11/14/2017
  * 
  */
 import java.io.BufferedReader;
@@ -64,30 +64,43 @@ public class PowerLawFitting
 			hpairs.add(new Pair(Integer.parseInt(tokens[1]), Integer.parseInt(tokens[2]), Double.parseDouble(tokens[3])));
 
 		}
-		System.out.println(company_allpairs.keySet());
+		//System.out.println(company_allpairs.keySet());
 		br.close();
 
 		double threshold = 0.5;
 		UndirectedGraph<Integer, DefaultEdge> ug;
 
 		HashSet<Set<Integer>> uniqueConnectedComponents = new HashSet<Set<Integer>>();
+		/*// For displaying each connected component with its edges
+		HashMap<Set<Integer>, UndirectedGraph<Integer, DefaultEdge>> uniqueCCWithEdges = new HashMap<Set<Integer>, UndirectedGraph<Integer, DefaultEdge>>();*/
+
 		//int debug_nonuniq_ctr = 0;
 
 		HashMap<Integer,UndirectedGraph<Integer, DefaultEdge>> egoNets = new HashMap<Integer, UndirectedGraph<Integer,DefaultEdge>>();
-
+		PrintWriter pwrg = new PrintWriter(new File("Purchases_Sim_Graphs.csv"));
 		System.out.println();
-		for( Integer k :company_allpairs.keySet())
+		for(Integer k :company_allpairs.keySet())
 		{
 			/*System.out.println("====================");
 			System.out.println("Company "+k);*/
 			HashSet<Pair> hp = company_allpairs.get(k);
 			ug = CreateGraph(hp, threshold);
 			ConnectivityInspector<Integer, DefaultEdge> ci = new ConnectivityInspector<Integer, DefaultEdge>(ug);
+			//System.out.println("================================================Graph================================================");
 
+			//System.out.println(ug);
+			//System.out.println();
+
+			pwrg.println("Vertices and Edges:");
+			pwrg.println(ug.vertexSet());
+			pwrg.println(ug.edgeSet());
+			pwrg.println();
+			// System.out.println(ug.edgesOf())
 			HashSet<Integer> hi = new HashSet<Integer>();
 			for(Pair p: hp)
 			{
-				hi.add(p.id1); hi.add(p.id2);
+				hi.add(p.id1);
+				hi.add(p.id2);
 			}
 
 			for(Integer ii : hi)
@@ -96,6 +109,7 @@ public class PowerLawFitting
 				{
 					//System.out.println(ii+" , "+ci.connectedSetOf(ii)+"	"+ci.connectedSetOf(ii).size()); // this displays same CC's multiple times because we are iterating on Vertices 
 					uniqueConnectedComponents.add(ci.connectedSetOf(ii));
+
 					//debug_nonuniq_ctr++;
 
 					// compute it's egonet and add to global set
@@ -115,7 +129,7 @@ public class PowerLawFitting
 					{
 						for(Integer cn2 : egonet_ii.vertexSet())
 						{
-							if(cn==cn2) continue;
+							if(cn == cn2) continue;
 							if(ug.containsEdge(cn, cn2))
 							{
 								egonet_ii.addEdge(cn,cn2);
@@ -129,39 +143,65 @@ public class PowerLawFitting
 				}
 			}
 		}
+		pwrg.close();
+
 		//System.out.println(" non unique ctr: "+ debug_nonuniq_ctr);
-		System.out.println(" uniq ctr: "+uniqueConnectedComponents.size());
-		Iterator<Set<Integer>> itr = uniqueConnectedComponents.iterator() ;
+		System.out.println(" uniq ctr: " + uniqueConnectedComponents.size());
+		//System.out.println("=====================================Unique connected components=====================================");
+		System.out.println(uniqueConnectedComponents); // This prints without edges
 
-		//ToDo: Display each company and its connected components
+		Iterator<Set<Integer>> itr = uniqueConnectedComponents.iterator();
+		/*while(itr.hasNext())
+		{
+			Set<Integer> iSet = itr.next(); //This is the connected component
+			Iterator<Integer> itr_in = iSet.iterator();
+			UndirectedGraph<Integer, DefaultEdge> connectedComponent_ii = new SimpleGraph<Integer, DefaultEdge>(DefaultEdge.class);
+			while(itr_in.hasNext())
+			{
+				//Add edges for connectedComponent_ii
+			}
+			uniqueCCWithEdges.put(itr.next(), connectedComponent_ii);
 
+		}*/
+
+
+		PrintWriter pwCC = new PrintWriter(new File("Purchase_Connected_Components_Similarity.csv"));
 		while(itr.hasNext())
 		{			
 			Iterator<Integer> itr_in = itr.next().iterator();
 
 			while(itr_in.hasNext())
 			{
-				System.out.print(itr_in.next());
+				Integer i =  itr_in.next();
+				System.out.print(i);
+				pwCC.print(i);
 				if(itr_in.hasNext())
 				{
 					System.out.print(" , ");
+					pwCC.print(" , ");
 				}
 			}
 
 			System.out.println();
+			pwCC.println();
 		}
+		pwCC.close();
 
+		PrintWriter pwEgoP = new PrintWriter(new File("Purchase_EgoNet_Each_Insider.csv"));
 		System.out.println("All ego nets: ");
 		for(Integer eg:egoNets.keySet())
 		{
 			System.out.println("Insider Node: "+eg);
 			System.out.println(egoNets.get(eg));
+			pwEgoP.println("Insider Node: "+eg);
+			pwEgoP.println(egoNets.get(eg));
 			System.out.println("==================================================================");
 		}
+		pwEgoP.close();
 
 		//Store all the connected components in a hash set
 		PrintWriter pwr = new PrintWriter(new File("purchase_all_cc_size_distribution.csv"));
-		for(Set s:uniqueConnectedComponents)
+		for(Set s : uniqueConnectedComponents)
 		{
 			pwr.println(s.size());
 		}
@@ -222,17 +262,24 @@ public class PowerLawFitting
 
 		UndirectedGraph<Integer, DefaultEdge> ugs;
 		HashSet<Set<Integer>> uniqueConnectedComponentsSale = new HashSet<Set<Integer>>();
-		int sale_debug_nonuniq_ctr = 0;
+		//int sale_debug_nonuniq_ctr = 0;
 
 		HashMap<Integer,UndirectedGraph<Integer, DefaultEdge>> egoNetsSale = new HashMap<Integer, UndirectedGraph<Integer,DefaultEdge>>();
 
+		PrintWriter pwrgs = new PrintWriter(new File("Sales_Sim_Graphs.csv"));
 		System.out.println();
-		for( Integer k :sale_company_allpairs.keySet()  )
+		for(Integer k :sale_company_allpairs.keySet())
 		{
-			System.out.println("====================");
-			System.out.println("Company "+k);
+			//System.out.println("====================");
+			//System.out.println("Company "+k);
 			HashSet<Pair> hp = sale_company_allpairs.get(k) ;
 			ugs = CreateGraph(hp, threshold);
+
+			pwrgs.println("Vertices and Edges:");
+			pwrgs.println(ugs.vertexSet());
+			pwrgs.println(ugs.edgeSet());
+			pwrgs.println();
+
 			ConnectivityInspector<Integer, DefaultEdge> ci = new ConnectivityInspector<Integer, DefaultEdge>(ugs);
 
 			HashSet<Integer> hi = new HashSet<Integer>();
@@ -246,10 +293,10 @@ public class PowerLawFitting
 				if(ci.connectedSetOf(ii).size() > 1) // Remove isolated nodes
 				{
 					// ci.connectedSetOf(ii);
-					System.out.println(ii+" , "+ci.connectedSetOf(ii) + " " + ci.connectedSetOf(ii).size());
+					//System.out.println(ii+" , "+ci.connectedSetOf(ii) + " " + ci.connectedSetOf(ii).size());
 
 					uniqueConnectedComponentsSale.add(ci.connectedSetOf(ii));
-					sale_debug_nonuniq_ctr ++;
+					//sale_debug_nonuniq_ctr ++;
 
 					// compute it's egonet and add to global set
 					UndirectedGraph<Integer, DefaultEdge> egonet_ii = new SimpleGraph<Integer, DefaultEdge>(DefaultEdge.class);
@@ -257,7 +304,8 @@ public class PowerLawFitting
 					// iterate over all nodes in connected set, retain only those that have an edge with the ego node
 					for(Integer cn : ci.connectedSetOf(ii))
 					{
-						if(ugs.containsEdge(ii, cn)){
+						if(ugs.containsEdge(ii, cn))
+						{
 							egonet_ii.addVertex(cn);
 							//egonet_ii.addEdge(ii,cn);
 						}
@@ -280,32 +328,46 @@ public class PowerLawFitting
 				}
 			}
 		}
-		System.out.println(" non unique ctr: " + sale_debug_nonuniq_ctr);
+		pwrgs.close();
+
+		//System.out.println(" non unique ctr: " + sale_debug_nonuniq_ctr);
 		System.out.println(" uniq ctr: " + uniqueConnectedComponentsSale.size());
 
-		Iterator<Set<Integer>> itrSale = uniqueConnectedComponentsSale.iterator() ;
+		Iterator<Set<Integer>> itrSale = uniqueConnectedComponentsSale.iterator();
+		PrintWriter pwCC_sale = new PrintWriter(new File("Sale_Connected_Components_Similarity.csv"));
+
 		while(itrSale.hasNext())
 		{
 			Iterator<Integer> itr_in = itrSale.next().iterator();
 
 			while(itr_in.hasNext())
 			{
-				System.out.print(itr_in.next());
+				Integer i = itr_in.next();
+				System.out.print(i);
+				pwCC_sale.print(i);
 				if(itr_in.hasNext())
 				{
-					System.out.print(",");
+					System.out.print(" , ");
+					pwCC_sale.print(" , ");
 				}
 			}
 
 			System.out.println();
+			pwCC_sale.println();
 		}
+		pwCC_sale.close();
+
 		System.out.println("All ego nets: ");
+		PrintWriter pwEgoS = new PrintWriter(new File("Sale_EgoNet_Each_Insider.csv"));
 		for(Integer eg:egoNetsSale.keySet())
 		{
 			System.out.println("Insider Node: "+eg);
+			pwEgoS.println("Insider Node: "+eg);
 			System.out.println(egoNetsSale.get(eg));
+			pwEgoS.println(egoNetsSale.get(eg));
 			System.out.println("==================================================================");
 		}
+		pwEgoS.close();
 
 		//Store all the connected components in a hash set
 		PrintWriter pwrs = new PrintWriter(new File("sale_all_cc_size_distribution.csv"));
